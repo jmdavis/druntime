@@ -4644,12 +4644,12 @@ unittest
 /+
     Local version of abs, since std.math.abs is in Phobos, not druntime.
   +/
-private long _abs(long val) @safe pure nothrow @nogc
+long _abs(long val) @safe pure nothrow @nogc
 {
     return val >= 0 ? val : -val;
 }
 
-private double _abs(double val) @safe pure nothrow @nogc
+double _abs(double val) @safe pure nothrow @nogc
 {
     return val >= 0.0 ? val : -val;
 }
@@ -4698,7 +4698,7 @@ version(unittest) const(char)* numToStringz()(long value) @safe pure nothrow
 
 
 /+ A copy of std.typecons.TypeTuple. +/
-private template _TypeTuple(TList...)
+template _TypeTuple(TList...)
 {
     alias TList _TypeTuple;
 }
