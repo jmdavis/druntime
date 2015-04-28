@@ -2524,7 +2524,7 @@ assert(before + timeElapsed == after).
 
     unittest
     {
-        assert(MonoTimeImpl.ticksPerSecond == MonoTimeImpl._ticksPerSecond);
+        assert(MonoTimeImpl.ticksPerSecond == _ticksPerSecond);
     }
 
 
@@ -2607,45 +2607,45 @@ assert(before + timeElapsed == after).
 
 private:
 
-    static immutable long _ticksPerSecond;
-
-    @trusted shared static this()
-    {
-        version(Windows)
-        {
-            long ticksPerSecond;
-            if(QueryPerformanceFrequency(&ticksPerSecond) != 0)
-                _ticksPerSecond = ticksPerSecond;
-        }
-        else version(OSX)
-        {
-            mach_timebase_info_data_t info;
-            if(mach_timebase_info(&info) == 0)
-                _ticksPerSecond = 1_000_000_000L * info.numer / info.denom;
-        }
-        else version(Posix)
-        {
-            timespec ts;
-            if(clock_getres(clockArg, &ts) == 0)
-            {
-                // For some reason, on some systems, clock_getres returns
-                // a resolution which is clearly wrong (it's a millisecond
-                // or worse, but the time is updated much more frequently
-                // than that). In such cases, we'll just use nanosecond
-                // resolution.
-                _ticksPerSecond = ts.tv_nsec >= 1000 ? 1_000_000_000L
-                                                     : 1_000_000_000L / ts.tv_nsec;
-            }
-        }
-    }
-
-    unittest
-    {
-        assert(_ticksPerSecond);
-    }
-
 
     long _ticks;
+}
+
+private static immutable long _ticksPerSecond;
+
+@trusted shared static this()
+{
+    version(Windows)
+    {
+        long ticksPerSecond;
+        if(QueryPerformanceFrequency(&ticksPerSecond) != 0)
+            _ticksPerSecond = ticksPerSecond;
+    }
+    else version(OSX)
+    {
+        mach_timebase_info_data_t info;
+        if(mach_timebase_info(&info) == 0)
+            _ticksPerSecond = 1_000_000_000L * info.numer / info.denom;
+    }
+    else version(Posix)
+    {
+        timespec ts;
+        if(clock_getres(clockArg, &ts) == 0)
+        {
+            // For some reason, on some systems, clock_getres returns
+            // a resolution which is clearly wrong (it's a millisecond
+            // or worse, but the time is updated much more frequently
+            // than that). In such cases, we'll just use nanosecond
+            // resolution.
+            _ticksPerSecond = ts.tv_nsec >= 1000 ? 1_000_000_000L
+                : 1_000_000_000L / ts.tv_nsec;
+        }
+    }
+}
+
+unittest
+{
+    assert(_ticksPerSecond);
 }
 
 // Tests for MonoTimeImpl.currTime. It has to be outside, because MonoTimeImpl
