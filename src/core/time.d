@@ -2676,7 +2676,7 @@ private immutable long[__traits(allMembers, ClockType).length] _ticksPerSecond;
                 // or worse, but the time is updated much more frequently
                 // than that). In such cases, we'll just use nanosecond
                 // resolution.
-                _ticksPerSecond[MonoTimeImpl!clockArg._clockIdx] = ts.tv_nsec >= 1000 ? 1_000_000_000L
+                _ticksPerSecond[i] = ts.tv_nsec >= 1000 ? 1_000_000_000L
                     : 1_000_000_000L / ts.tv_nsec;
             }
         }
