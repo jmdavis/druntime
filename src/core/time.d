@@ -2108,6 +2108,26 @@ alias MonoTime = MonoTimeImpl!(ClockType.normal);
   +/
 struct MonoTimeImpl(ClockType clockType)
 {
+    // need this helper to get the index of the clock type in the array below
+    private static size_t _clockNameIndex()
+    {
+        foreach(i, strname; __traits(allMembers, ClockType))
+        {
+            mixin("alias val = ClockType." ~ strname ~ ";");
+            if(val == clockType)
+                return i;
+        }
+        assert(0);
+    }
+
+    private enum _clockIdx = _clockNameIndex();
+
+    unittest
+    {
+        mixin("alias val = ClockType." ~ __traits(allMembers, ClockType)[_clockIdx] ~ ";");
+        assert(val == clockType);
+    }
+
 @safe:
 
     version(Windows)
@@ -2185,7 +2205,7 @@ struct MonoTimeImpl(ClockType clockType)
       +/
     static @property MonoTimeImpl currTime() @trusted nothrow @nogc
     {
-        if(_ticksPerSecond == 0)
+        if(_ticksPerSecond[_clockIdx] == 0)
             assert(0, "MonoTimMonoTimeImpl failed to get the frequency of the system's monotonic clock.");
 
         version(Windows)
@@ -2208,7 +2228,7 @@ struct MonoTimeImpl(ClockType clockType)
 
             return MonoTimeImpl(convClockFreq(ts.tv_sec * 1_000_000_000L + ts.tv_nsec,
                                               1_000_000_000L,
-                                              _ticksPerSecond));
+                                              _ticksPerSecond[_clockIdx]));
         }
     }
 
@@ -2519,12 +2539,12 @@ assert(before + timeElapsed == after).
       +/
     static @property long ticksPerSecond() pure nothrow @nogc
     {
-        return _ticksPerSecond;
+        return _ticksPerSecond[_clockIdx];
     }
 
     unittest
     {
-        assert(MonoTimeImpl.ticksPerSecond == MonoTimeImpl._ticksPerSecond);
+        assert(MonoTimeImpl.ticksPerSecond == _ticksPerSecond[_clockIdx]);
     }
 
 
@@ -2532,7 +2552,7 @@ assert(before + timeElapsed == after).
     string toString() const pure nothrow
     {
         static if(clockType == ClockType.normal)
-            return "MonoTime(" ~ numToString(_ticks) ~ " ticks, " ~ numToString(_ticksPerSecond) ~ " ticks per second)";
+            return "MonoTime(" ~ numToString(_ticks) ~ " ticks, " ~ numToString(_ticksPerSecond[_clockIdx]) ~ " ticks per second)";
         else
         {
             static string genMix()
@@ -2544,7 +2564,7 @@ assert(before + timeElapsed == after).
             mixin(genMix());
 
             return "MonoTimeImpl!(ClockType." ~ name ~ ")(" ~ numToString(_ticks) ~ " ticks, " ~
-                   numToString(_ticksPerSecond) ~ " ticks per second)";
+                   numToString(_ticksPerSecond[_clockIdx]) ~ " ticks per second)";
         }
     }
 
@@ -2607,25 +2627,48 @@ assert(before + timeElapsed == after).
 
 private:
 
-    static immutable long _ticksPerSecond;
-
-    @trusted shared static this()
+    unittest
     {
-        version(Windows)
+        assert(_ticksPerSecond[_clockIdx]);
+    }
+
+
+    long _ticks;
+}
+
+private immutable long[__traits(allMembers, ClockType).length] _ticksPerSecond;
+
+@trusted shared static this()
+{
+    version(Windows)
+    {
+        long ticksPerSecond;
+        if(QueryPerformanceFrequency(&ticksPerSecond) != 0)
         {
-            long ticksPerSecond;
-            if(QueryPerformanceFrequency(&ticksPerSecond) != 0)
-                _ticksPerSecond = ticksPerSecond;
+            foreach(i, typeStr; __traits(allMembers, ClockType))
+            {
+                _ticksPerSecond[i] = ticksPerSecond;
+            }
         }
-        else version(OSX)
+    }
+    else version(OSX)
+    {
+        mach_timebase_info_data_t info;
+        if(mach_timebase_info(&info) == 0)
         {
-            mach_timebase_info_data_t info;
-            if(mach_timebase_info(&info) == 0)
-                _ticksPerSecond = 1_000_000_000L * info.numer / info.denom;
+            long ticksPerSecond = 1_000_000_000L * info.numer / info.denom;
+            foreach(i, typeStr; __traits(allMembers, ClockType))
+            {
+                _ticksPerSecond[i] = ticksPerSecond;
+            }
         }
-        else version(Posix)
+    }
+    else version(Posix)
+    {
+        timespec ts;
+        foreach(i, typeStr; __traits(allMembers, ClockType))
         {
-            timespec ts;
+            mixin("alias clockArg = ClockType." ~ typeStr ~ ";");
             if(clock_getres(clockArg, &ts) == 0)
             {
                 // For some reason, on some systems, clock_getres returns
@@ -2633,20 +2676,13 @@ private:
                 // or worse, but the time is updated much more frequently
                 // than that). In such cases, we'll just use nanosecond
                 // resolution.
-                _ticksPerSecond = ts.tv_nsec >= 1000 ? 1_000_000_000L
-                                                     : 1_000_000_000L / ts.tv_nsec;
+                _ticksPerSecond[MonoTimeImpl!clockArg._clockIdx] = ts.tv_nsec >= 1000 ? 1_000_000_000L
+                    : 1_000_000_000L / ts.tv_nsec;
             }
         }
     }
-
-    unittest
-    {
-        assert(_ticksPerSecond);
-    }
-
-
-    long _ticks;
 }
+
 
 // Tests for MonoTimeImpl.currTime. It has to be outside, because MonoTimeImpl
 // is a template. This unittest block also makes sure that MonoTimeImpl actually
