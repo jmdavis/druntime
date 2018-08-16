@@ -149,14 +149,32 @@ else version (FreeBSD)
         DT_WHT      = 14
     }
 
-    align(4)
-    struct dirent
+    import core.sys.freebsd.unistd : ino64First;
+
+    static if (__traits(getTargetInfo, "freeBSDVersion") >= ino64First)
     {
-        uint      d_fileno;
-        ushort    d_reclen;
-        ubyte     d_type;
-        ubyte     d_namlen;
-        char[256] d_name;
+        struct dirent
+        {
+            ino_t     d_fileno;
+            off_t     d_off;
+            ushort    d_reclen;
+            ubyte     d_type;
+            ushort    d_namlen;
+            ushort    d_pad1;
+            char[256] d_name;
+        }
+    }
+    else
+    {
+        align(4)
+        struct dirent
+        {
+            uint      d_fileno;
+            ushort    d_reclen;
+            ubyte     d_type;
+            ubyte     d_namlen;
+            char[256] d_name;
+        }
     }
 
     alias void* DIR;
