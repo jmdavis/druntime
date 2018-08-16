@@ -32,18 +32,16 @@ struct fid
 
 enum MFSNAMELEN = 16;
 
-version(FreeBSD12)
-{
-    enum MNAMELEN   = 1024;
-    enum STATFS_VERSION = 0x20140518;
-}
-else version(FreeBSD11)
+version(FreeBSD11)
 {
     enum MNAMELEN   = 88;
     enum STATFS_VERSION = 0x20030518;
 }
 else
-    static assert(0, "Unsupported version of FreeBSD");
+{
+    enum MNAMELEN   = 1024;
+    enum STATFS_VERSION = 0x20140518;
+}
 
 struct statfs_t
 {

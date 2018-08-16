@@ -43,20 +43,7 @@ extern(D) void EV_SET(kevent_t* kevp, typeof(kevent_t.tupleof) args)
     *kevp = kevent_t(args);
 }
 
-version(FreeBSD12)
-{
-    struct kevent_t
-    {
-        uintptr_t ident;
-        short     filter;
-        ushort    flags;
-        uint      fflags;
-        long      data;
-        void*     udata;
-        ulong[4]  ext;
-    }
-}
-else version(FreeBSD11)
+version(FreeBSD11)
 {
     struct kevent_t
     {
@@ -69,7 +56,18 @@ else version(FreeBSD11)
     }
 }
 else
-    static assert(0, "Unsupported version of FreeBSD");
+{
+    struct kevent_t
+    {
+        uintptr_t ident;
+        short     filter;
+        ushort    flags;
+        uint      fflags;
+        long      data;
+        void*     udata;
+        ulong[4]  ext;
+    }
+}
 
 enum
 {

@@ -806,7 +806,39 @@ else version( FreeBSD )
 {
     // https://github.com/freebsd/freebsd/blob/master/sys/sys/stat.h
 
-    version(FreeBSD12)
+    version(FreeBSD11)
+    {
+        struct stat_t
+        {
+            dev_t       st_dev;
+            ino_t       st_ino;
+            mode_t      st_mode;
+            nlink_t     st_nlink;
+            uid_t       st_uid;
+            gid_t       st_gid;
+            dev_t       st_rdev;
+
+            time_t      st_atime;
+            c_long      __st_atimensec;
+            time_t      st_mtime;
+            c_long      __st_mtimensec;
+            time_t      st_ctime;
+            c_long      __st_ctimensec;
+
+            off_t       st_size;
+            blkcnt_t    st_blocks;
+            blksize_t   st_blksize;
+            fflags_t    st_flags;
+            uint        st_gen;
+            int         st_lspare;
+
+            time_t      st_birthtime;
+            c_long      st_birthtimensec;
+
+            ubyte[16 - timespec.sizeof] padding;
+        }
+    }
+    else
     {
         struct stat_t
         {
@@ -848,40 +880,6 @@ else version( FreeBSD )
             ulong[10] st_spare;
         }
     }
-    else version(FreeBSD11)
-    {
-        struct stat_t
-        {
-            uint        st_dev;
-            uint        st_ino;
-            mode_t      st_mode;
-            ushort      st_nlink;
-            uid_t       st_uid;
-            gid_t       st_gid;
-            uint        st_rdev;
-
-            time_t      st_atime;
-            c_long      __st_atimensec;
-            time_t      st_mtime;
-            c_long      __st_mtimensec;
-            time_t      st_ctime;
-            c_long      __st_ctimensec;
-
-            off_t       st_size;
-            blkcnt_t    st_blocks;
-            blksize_t   st_blksize;
-            fflags_t    st_flags;
-            uint        st_gen;
-            int         st_lspare;
-
-            time_t      st_birthtime;
-            c_long      st_birthtimensec;
-
-            ubyte[16 - timespec.sizeof] padding;
-        }
-    }
-    else
-        static assert(0, "Unsupported version of FreeBSD");
 
     enum S_IRUSR    = 0x100; // octal 0000400
     enum S_IWUSR    = 0x080; // octal 0000200

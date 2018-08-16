@@ -148,14 +148,7 @@ else version( FreeBSD )
     // https://github.com/freebsd/freebsd/blob/master/sys/sys/_types.h
     alias long      blkcnt_t;
 
-    version(FreeBSD12)
-    {
-        alias ulong blksize_t;
-        alias ulong dev_t;
-        alias ulong ino_t;
-        alias ulong nlink_t;
-    }
-    else version(FreeBSD11)
+    version(FreeBSD11)
     {
         alias uint   blksize_t;
         alias uint   dev_t;
@@ -163,7 +156,12 @@ else version( FreeBSD )
         alias ushort nlink_t;
     }
     else
-        static assert(0, "Unsupported version of FreeBSD");
+    {
+        alias ulong blksize_t;
+        alias ulong dev_t;
+        alias ulong ino_t;
+        alias ulong nlink_t;
+    }
 
     alias uint      gid_t;
     alias ushort    mode_t;
